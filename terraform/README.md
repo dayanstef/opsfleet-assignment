@@ -75,13 +75,21 @@ kubectl get nodeclaims -w
 kubectl get nodes -L kubernetes.io/arch,karpenter.sh/capacity-type,node.kubernetes.io/instance-type
 ```
 
-You should see both architectures come up, e.g.:
+Captured from a live run of this exact configuration (EKS 1.36, eu-west-1):
 
 ```
-NAME           ARCH    CAPACITY-TYPE   INSTANCE-TYPE
-ip-10-0-x-x    amd64   spot            c6i.large
-ip-10-0-y-y    arm64   spot            c7g.large
+NAME                                        STATUS   ROLES    AGE     VERSION               ARCH    CAPACITY-TYPE   INSTANCE-TYPE
+ip-10-0-14-11.eu-west-1.compute.internal    Ready    <none>   4m23s   v1.36.2-eks-8f14419   arm64                   t4g.medium
+ip-10-0-17-129.eu-west-1.compute.internal   Ready    <none>   4m22s   v1.36.2-eks-8f14419   arm64                   t4g.medium
+ip-10-0-21-249.eu-west-1.compute.internal   Ready    <none>   36s     v1.36.2-eks-8f14419   arm64   spot            c6g.xlarge
+ip-10-0-30-147.eu-west-1.compute.internal   Ready    <none>   114s    v1.36.2-eks-8f14419   amd64   spot            c8i-flex.2xlarge
 ```
+
+The two `t4g.medium` are the static system nodes. The `c6g.xlarge` (Graviton)
+and `c8i-flex.2xlarge` (x86) are spot instances Karpenter launched for the
+example deployments - both from the same NodePool, both Ready in under a
+minute. Deleting the deployments drains both spot nodes again within ~2
+minutes (consolidation), leaving only the system pair.
 
 Notes for developers:
 
