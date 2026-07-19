@@ -34,6 +34,19 @@ resource "helm_release" "karpenter" {
       serviceAccount = {
         name = module.karpenter.service_account
       }
+      # Explicit requests: guaranteed scheduling for the controller and no
+      # spare system-node capacity that could silently absorb workload pods
+      controller = {
+        resources = {
+          requests = {
+            cpu    = "1"
+            memory = "1Gi"
+          }
+          limits = {
+            memory = "1Gi"
+          }
+        }
+      }
       settings = {
         clusterName       = module.eks.cluster_name
         clusterEndpoint   = module.eks.cluster_endpoint
