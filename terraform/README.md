@@ -107,6 +107,10 @@ kubectl delete -f examples/ --ignore-not-found   # let Karpenter scale to zero
 terraform destroy
 ```
 
+A plain `terraform destroy` is also safe with workloads still running: the
+NodePool is removed first (explicit dependency ordering), which makes Karpenter
+drain and terminate its nodes while the controller is still alive.
+
 ## Cost notes
 
 The always-on POC footprint is the EKS control plane, one NAT gateway and two
