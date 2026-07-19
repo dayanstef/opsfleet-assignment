@@ -1,0 +1,25 @@
+# Runs strictly on x86 (amd64) capacity. If none is available, Karpenter
+# launches an x86 instance - spot first, on-demand as fallback.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-x86
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-x86
+  template:
+    metadata:
+      labels:
+        app: hello-x86
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: web
+          image: public.ecr.aws/nginx/nginx:stable
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi

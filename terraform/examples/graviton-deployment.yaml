@@ -1,0 +1,25 @@
+# Runs strictly on Graviton (arm64) capacity. The image must support arm64 -
+# this one is multi-arch, which is the recommended default for all services.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-graviton
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-graviton
+  template:
+    metadata:
+      labels:
+        app: hello-graviton
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      containers:
+        - name: web
+          image: public.ecr.aws/nginx/nginx:stable
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi

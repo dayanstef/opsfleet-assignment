@@ -1,0 +1,24 @@
+# No architecture pin: Karpenter picks the cheapest capacity that fits.
+# With a multi-arch image this in practice usually lands on Graviton spot -
+# the best price/performance without the workload having to care.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-anywhere
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-anywhere
+  template:
+    metadata:
+      labels:
+        app: hello-anywhere
+    spec:
+      containers:
+        - name: web
+          image: public.ecr.aws/nginx/nginx:stable
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi
