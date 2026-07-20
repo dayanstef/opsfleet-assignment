@@ -6,14 +6,23 @@ spec:
   # EKS-optimized AL2023 AMIs. The alias resolves the right image for the
   # cluster's Kubernetes version AND each launched node's CPU architecture,
   # which is what makes a single mixed x86/arm64 pool possible.
+  # @latest keeps the POC on the current AMI (automatic CVE currency); a
+  # production pool pins a dated alias (al2023@v2025xxxx) promoted through
+  # nonprod so AMI rollout is a deliberate change, not a side effect
   amiSelectorTerms:
     - alias: al2023@latest
-  role: {{ .Values.nodeRole | quote }}
+  role: {{ required "nodeRole must be injected by Terraform" .Values.nodeRole | quote }}
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: {{ .Values.clusterName | quote }}
+        karpenter.sh/discovery: {{ required "clusterName must be injected by Terraform" .Values.clusterName | quote }}
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: {{ .Values.clusterName | quote }}
   tags:
     karpenter.sh/discovery: {{ .Values.clusterName | quote }}
+  # Declares Karpenter's own defaults explicitly: IMDSv2 required with a hop
+  # limit of 1 means pods cannot reach the node role's credentials
+  metadataOptions:
+    httpEndpoint: enabled
+    httpTokens: required
+    httpPutResponseHopLimit: 1

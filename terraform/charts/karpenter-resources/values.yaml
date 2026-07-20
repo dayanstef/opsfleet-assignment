@@ -1,3 +1,5 @@
-# Both values are injected by Terraform - see ../../karpenter.tf
+# Both values are injected by Terraform - see ../../karpenter.tf.
+# Rendering without them fails loudly (required) instead of producing an
+# EC2NodeClass whose selectors match nothing.
 clusterName: ""
 nodeRole: ""

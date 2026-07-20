@@ -34,6 +34,8 @@ spec:
   limits:
     cpu: "64"
     memory: 128Gi
+  # Aggressive consolidation suits the POC demo; production bounds the churn
+  # with disruption budgets here and PodDisruptionBudgets on the workloads
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 1m
