@@ -72,9 +72,12 @@ resource "helm_release" "karpenter_resources" {
     })
   ]
 
-  # module.eks is listed explicitly for DESTROY ordering: NodePool/EC2NodeClass
-  # finalizers are cleared by the Karpenter controller, which runs on the
-  # system node group inside module.eks. Without this, terraform destroy can
-  # tear the node group down in parallel and the uninstall hangs on finalizers.
-  depends_on = [helm_release.karpenter, module.eks]
+  # Listed explicitly for DESTROY ordering. The NodePool/EC2NodeClass
+  # finalizers are cleared by the Karpenter controller, so everything the
+  # controller needs to do that job must outlive these CRs: the controller
+  # itself (helm_release.karpenter), the nodes it runs on (module.eks), its
+  # credentials and interruption queue (module.karpenter), and NAT egress to
+  # the AWS APIs (module.vpc). If any of them is torn down in parallel, the
+  # uninstall hangs on finalizers until its context deadline.
+  depends_on = [helm_release.karpenter, module.eks, module.karpenter, module.vpc]
 }
