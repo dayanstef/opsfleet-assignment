@@ -81,14 +81,14 @@ Captured from a live run of this exact configuration (EKS 1.36, eu-west-1):
 
 ```
 NAME                                        STATUS   ROLES    AGE     VERSION               ARCH    CAPACITY-TYPE   INSTANCE-TYPE
-ip-10-0-14-11.eu-west-1.compute.internal    Ready    <none>   4m23s   v1.36.2-eks-8f14419   arm64                   t4g.medium
-ip-10-0-17-129.eu-west-1.compute.internal   Ready    <none>   4m22s   v1.36.2-eks-8f14419   arm64                   t4g.medium
-ip-10-0-21-249.eu-west-1.compute.internal   Ready    <none>   36s     v1.36.2-eks-8f14419   arm64   spot            c6g.xlarge
-ip-10-0-30-147.eu-west-1.compute.internal   Ready    <none>   114s    v1.36.2-eks-8f14419   amd64   spot            c8i-flex.2xlarge
+ip-10-0-14-139.eu-west-1.compute.internal   Ready    <none>   3m9s    v1.36.2-eks-8f14419   arm64   spot            c6g.xlarge
+ip-10-0-18-158.eu-west-1.compute.internal   Ready    <none>   5m46s   v1.36.2-eks-8f14419   arm64                   t4g.medium
+ip-10-0-36-143.eu-west-1.compute.internal   Ready    <none>   3m19s   v1.36.2-eks-8f14419   amd64   spot            c6i.2xlarge
+ip-10-0-9-93.eu-west-1.compute.internal     Ready    <none>   5m44s   v1.36.2-eks-8f14419   arm64                   t4g.medium
 ```
 
 The two `t4g.medium` are the static system nodes. The `c6g.xlarge` (Graviton)
-and `c8i-flex.2xlarge` (x86) are spot instances Karpenter launched for the
+and `c6i.2xlarge` (x86) are spot instances Karpenter launched for the
 example deployments - both from the same NodePool, each Ready within about a
 minute of its NodeClaim. Deleting the deployments drains both spot nodes again
 within ~2 minutes (consolidation), leaving only the system pair.
