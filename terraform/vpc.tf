@@ -16,7 +16,7 @@ locals {
 # would run one per AZ for zone fault isolation.
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 6.0"
+  version = "6.6.1"
 
   name = var.cluster_name
   cidr = var.vpc_cidr

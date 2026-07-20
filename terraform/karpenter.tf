@@ -1,10 +1,12 @@
+data "aws_partition" "current" {}
+
 # Supporting infrastructure for the Karpenter controller: controller IAM role
 # wired to the service account via EKS Pod Identity, node IAM role + access
 # entry, SQS interruption queue and EventBridge rules for spot interruption
 # and rebalance events.
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 21.24"
+  version = "21.24.0"
 
   cluster_name = module.eks.cluster_name
 
@@ -12,7 +14,7 @@ module "karpenter" {
 
   # SSM access to Karpenter-launched nodes for debugging without SSH keys
   node_iam_role_additional_policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    AmazonSSMManagedInstanceCore = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
 
   tags = var.tags

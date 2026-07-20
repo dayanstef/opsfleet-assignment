@@ -1,6 +1,6 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 21.24"
+  version = "21.24.0"
 
   name               = var.cluster_name
   kubernetes_version = var.kubernetes_version
@@ -13,6 +13,9 @@ module "eks" {
   # Production would restrict the endpoint to known CIDRs or go fully private.
   endpoint_public_access                   = true
   enable_cluster_creator_admin_permissions = true
+
+  # Access entries only - the legacy aws-auth ConfigMap auth surface stays off
+  authentication_mode = "API"
 
   addons = {
     coredns = {}
