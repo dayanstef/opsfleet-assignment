@@ -22,7 +22,7 @@ Terraform that stands up a complete proof of concept:
 
 The AWS credentials need permissions to create VPC, EKS, IAM, SQS and
 EventBridge resources. No local Helm binary is required - the Terraform Helm
-provider ships its own implementation.
+provider embeds Helm as a library.
 
 ## Deploy
 
@@ -49,11 +49,13 @@ backend in front of this.
 
 The cluster runs a single Karpenter NodePool that can launch **both**
 architectures. A developer picks the CPU architecture with a standard
-`nodeSelector` - no taints, tolerations or custom labels involved:
+`nodeSelector` in the pod spec - no taints, tolerations or custom labels
+involved:
 
 ```yaml
-      nodeSelector:
-        kubernetes.io/arch: arm64   # Graviton; use amd64 for x86
+spec:
+  nodeSelector:
+    kubernetes.io/arch: arm64   # Graviton; use amd64 for x86
 ```
 
 Omit the selector entirely and Karpenter simply launches whatever is cheapest
@@ -87,9 +89,9 @@ ip-10-0-30-147.eu-west-1.compute.internal   Ready    <none>   114s    v1.36.2-ek
 
 The two `t4g.medium` are the static system nodes. The `c6g.xlarge` (Graviton)
 and `c8i-flex.2xlarge` (x86) are spot instances Karpenter launched for the
-example deployments - both from the same NodePool, both Ready in under a
-minute. Deleting the deployments drains both spot nodes again within ~2
-minutes (consolidation), leaving only the system pair.
+example deployments - both from the same NodePool, each Ready within about a
+minute of its NodeClaim. Deleting the deployments drains both spot nodes again
+within ~2 minutes (consolidation), leaving only the system pair.
 
 Notes for developers:
 
@@ -99,6 +101,9 @@ Notes for developers:
 - Spot is preferred automatically; when spot capacity is unavailable Karpenter
   falls back to on-demand on its own. Nothing to configure per workload.
 - When pods disappear, Karpenter consolidates and removes now-empty nodes.
+- The example manifests are scheduling demos. Production workloads add a
+  restricted `securityContext` (non-root, read-only filesystem) and pin
+  images by digest rather than a mutable tag.
 
 ## Tear down
 

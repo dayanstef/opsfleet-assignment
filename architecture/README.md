@@ -27,7 +27,7 @@ only bigger knobs).
 | Cloud | AWS, primary region eu-west-1 |
 | Accounts | AWS Organizations, 5 accounts: management, security, shared services, nonprod, prod |
 | Network | One VPC per workload account, 3 AZs, public / private-app / private-data subnet tiers |
-| Compute | EKS + Karpenter (Graviton-first, spot for stateless), small static system node group |
+| Compute | EKS + Karpenter (one multi-arch pool, spot-first; Graviton wins on price), small static system node group |
 | Frontend | S3 + CloudFront (SPA is not served from the cluster) |
 | CI/CD | GitHub Actions (build/test/scan) + Argo CD (GitOps deploy), multi-arch images in ECR |
 | Database | RDS for PostgreSQL Multi-AZ + RDS Proxy; Aurora as the scale-up path |
@@ -47,7 +47,7 @@ flowchart LR
             nat["NAT per AZ"]
         end
         subgraph app["Private app subnets"]
-            eks["EKS: Flask API pods<br/>Karpenter nodes: Graviton, spot-first"]
+            eks["EKS: Flask API pods<br/>Karpenter nodes: spot-first, mostly Graviton"]
         end
         subgraph data["Private data subnets"]
             proxy["RDS Proxy"]
@@ -74,8 +74,7 @@ Karpenter, RDS/Aurora for PostgreSQL, CloudFront/WAF, Organizations with SCP
 guardrails - are the most mature versions of their kind. Graviton (arm64) plus
 spot gives the best raw price/performance available for the stateless API tier.
 The hiring pool and the body of operational knowledge around AWS are the
-largest, which matters for a small team that will grow. It is also where our
-team operates deepest, which a client should weigh as delivery risk reduction.
+largest, which matters for a small team that will grow.
 
 **The honest GCP counterpoint.** GKE Autopilot is the lowest-ops managed
 Kubernetes on the market, and Cloud SQL for PostgreSQL is excellent. If
@@ -198,15 +197,16 @@ Network security, layered:
 - Add-ons: VPC CNI, CoreDNS, kube-proxy, EKS Pod Identity agent, AWS Load
   Balancer Controller, External Secrets Operator, metrics-server.
 
-### Node strategy (mirrors the POC in `../terraform/`)
+### Node strategy (mirrors the POC in [`../terraform/`](../terraform/))
 
 - A **small static managed node group** (2-3 Graviton on-demand nodes) hosts
   the cluster-critical layer: Karpenter, CoreDNS, Argo CD, observability
   agents.
-- **Karpenter provisions all workload capacity**: one general NodePool,
-  Graviton-first with amd64 available (`arch In [arm64, amd64]`), spot +
-  on-demand with spot preferred. Flask is architecture-agnostic; multi-arch
-  images make Graviton a pure ~20-40% price/performance win.
+- **Karpenter provisions all workload capacity**: one general NodePool
+  spanning both architectures (`arch In [arm64, amd64]`), spot + on-demand
+  with spot preferred. Flask is architecture-agnostic; with multi-arch images
+  the price-ordered allocator lands on Graviton spot by default - a pure
+  ~20-40% price/performance win with no per-workload effort.
 - Stateless API pods ride spot with PodDisruptionBudgets and topology spread
   across AZs; anything disruption-sensitive (queues, schedulers, later
   stateful add-ons) pins `capacity-type: on-demand` via nodeSelector - policy
@@ -217,7 +217,7 @@ Network security, layered:
 
 - **HPA** on the API deployment (CPU-based day 1; request-latency or RPS via
   custom metrics once observability is in). HPA scales pods; Karpenter scales
-  nodes to fit them - no node-group math, no ASM tuning.
+  nodes to fit them - no node-group math, no ASG tuning.
 - Requests/limits discipline: requests from observed p90 usage, memory
   limit = memory request, **no CPU limits** (avoid throttling); namespace
   ResourceQuotas + LimitRanges in nonprod keep experiments honest.
@@ -281,13 +281,13 @@ work transfers wholesale if the client ever prefers it.
   pricing that is hard to predict pre-launch) for capabilities this stage does
   not need. RDS -> Aurora is a well-trodden, low-risk migration (snapshot
   restore or logical replication) when triggers fire: sustained read pressure
-  needing more than one or two replicas, failover-time requirements under ~35s,
-  or storage growth where Aurora's model wins.
+  needing more than a couple of replicas, or storage and I/O growth where
+  Aurora's model wins.
 - **RDS Multi-AZ** gives synchronous standby in a second AZ, automatic
   failover in roughly 60-120 seconds, patching within maintenance windows, and
   zero replication engineering. (The Multi-AZ *cluster* variant - two readable
-  standbys, faster failover - is the middle step if read scaling arrives
-  before Aurora does.)
+  standbys, ~35s failover - is the middle step if read scaling or
+  failover-time pressure arrives before Aurora does.)
 - **RDS Proxy from day 1**: Flask under gunicorn across dozens of
   autoscaling pods exhausts PostgreSQL connections fast (each connection costs
   server memory). The proxy pools and multiplexes, absorbs failover without
@@ -342,8 +342,8 @@ Sensitive user data drives defense in depth across every layer above:
   Inspector across all accounts, delegated to the security account; alerts to
   Slack/PagerDuty.
 - **Supply chain**: dependency and image scanning gate CI; ECR enhanced
-  scanning; base images pinned and rebuilt weekly; provider/chart versions
-  pinned in IaC with committed lock files.
+  scanning; base images pinned and rebuilt weekly; provider, module and chart
+  versions pinned in IaC with committed lock files.
 - **Encryption**: KMS CMKs for RDS, S3, EBS and secrets; TLS 1.2+ end to end.
 - **Application edge**: WAF managed rules + rate limiting at CloudFront.
 - **Compliance runway**: EU region + this control set positions Innovate Inc.
@@ -377,6 +377,6 @@ clean adoption path from this baseline.
 
 ---
 
-*Companion implementation: the `../terraform/` folder in this repository is a
-working POC of the compute pattern recommended here - EKS + Karpenter with
-Graviton and spot, deployed and verified live.*
+*Companion implementation: the [`../terraform/`](../terraform/) folder in this
+repository is a working POC of the compute pattern recommended here - EKS +
+Karpenter with Graviton and spot, deployed and verified live.*
