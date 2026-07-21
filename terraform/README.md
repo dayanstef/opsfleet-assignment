@@ -10,7 +10,8 @@ Terraform that stands up a complete proof of concept:
 - One multi-arch NodePool that launches both x86 (amd64) and Graviton (arm64)
   instances, preferring Spot with automatic on-demand fallback
 - A small static Graviton node group that hosts only the cluster-critical layer
-  (Karpenter controller, CoreDNS) - every workload node comes from Karpenter
+  (Karpenter controller, CoreDNS), tainted `CriticalAddonsOnly` so workloads
+  never land on it - every workload node comes from Karpenter
 
 ## Prerequisites
 

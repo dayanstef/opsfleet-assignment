@@ -201,7 +201,9 @@ Network security, layered:
 
 - A **small static managed node group** (2-3 Graviton on-demand nodes) hosts
   the cluster-critical layer: Karpenter, CoreDNS, Argo CD, observability
-  agents.
+  agents. Tainted `CriticalAddonsOnly=true:NoSchedule` (mirrored in the POC):
+  Karpenter and CoreDNS tolerate it out of the box, the other residents get
+  the toleration in their Helm values, and workloads are repelled by policy.
 - **Karpenter provisions all workload capacity**: one general NodePool
   spanning both architectures (`arch In [arm64, amd64]`), spot + on-demand
   with spot preferred. Flask is architecture-agnostic; with multi-arch images

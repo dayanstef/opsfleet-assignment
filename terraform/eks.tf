@@ -39,6 +39,24 @@ module "eks" {
       min_size     = 2
       max_size     = 3
       desired_size = 2
+
+      labels = {
+        role = "system"
+      }
+
+      # Workload pods are repelled by policy, not just capacity pressure.
+      # Both residents tolerate this taint out of the box: the Karpenter
+      # chart ships the toleration by default and the CoreDNS addon's
+      # default tolerations include it, so the critical layer schedules
+      # unchanged. The CNI/kube-proxy/pod-identity daemonsets carry
+      # blanket tolerations and are unaffected.
+      taints = {
+        critical_addons = {
+          key    = "CriticalAddonsOnly"
+          value  = "true"
+          effect = "NO_SCHEDULE"
+        }
+      }
     }
   }
 
